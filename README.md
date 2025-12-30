@@ -1,10 +1,10 @@
-# Gate Android GatePay SDK 接入指南
+# Gate Pay Android SDK Integration Guide
 
-## 一、获取SDK包，引入依赖
+## 1. Obtain the SDK Package and Add Dependencies
 
-### 1. 从 Gate 获取 `repos` 文件夹集成到项目根目录，或集成到本地maven仓库
+### 1.1 Obtain the `repos` folder from Gate and integrate it into the project root directory, or import it into your local Maven repository.
 
-### 2. 在project级别的 `build.gradle` 添加本地maven地址
+### 1.2 Add the local Maven repository path in the project-level `build.gradle`.
 
 ```gradle
 allprojects {
@@ -16,7 +16,7 @@ allprojects {
 }
 ```
 
-### 3. 在 app module 的 `build.gradle` 文件的 `dependencies` 中添加依赖
+### 1.3 Add the SDK dependency in the app module's `build.gradle` under `dependencies`.
 
 ```gradle
 implementation 'com.gateio.sdk:gatepay-sdk:1.0.0'
@@ -24,9 +24,9 @@ implementation 'com.gateio.sdk:gatepay-sdk:1.0.0'
 
 ---
 
-## 二、配置 Scheme 到 AndroidManifest（用于回调）
+## 2. Configure the Scheme in AndroidManifest (for Callback)
 
-在 AndroidManifest 对应需要调起支付的 Activity 中配置：
+Configure the Scheme in the corresponding Activity that initiates the payment in AndroidManifest:
 
 ```xml
 <intent-filter>
@@ -40,19 +40,19 @@ implementation 'com.gateio.sdk:gatepay-sdk:1.0.0'
 </intent-filter>
 ```
 
-> 💡 **提示：** 找不到提供的 Scheme？ 可以调用 `GatePaySDK.getSchemeByClientId()` 传入 `clientId` 获取。
+> 💡 **Tip:** If you cannot find the provided Scheme, you can call `GatePaySDK.getSchemeByClientId()` and pass in the `clientId` to retrieve it.
 
 ---
 
-## 三、在 Application 的 onCreate 中初始化
+## 3. Initialize the SDK in Application's onCreate
 
-**方法名：GatePaySDK.init()**
+**Method: GatePaySDK.init()**
 
 ```kotlin
 fun init(isDebug: Boolean, context: Context, clientId: String)
 ```
 
-**调用示例：**
+**Example Call:**
 
 ```kotlin
 class App : Application() {
@@ -67,23 +67,23 @@ class App : Application() {
 }
 ```
 
-### 参数说明
+### Parameter Description
 
-| 参数 | 类型 | 说明 |
+| Parameter | Type | Description |
 |------|------|------|
-| `isDebug` | Boolean | 是否开启调试模式（**⚠️ 线上版本必须设为 false**）<br>Log 日志筛选 `"gate_pay_sdk"` 可获得对应异常信息提示 |
-| `context` | Context | 建议传递 Application Context |
-| `clientId` | String | GatePay 平台获取的 clientId（即 Gate 提供的 `api_key`） |
+| `isDebug` | Boolean | Whether to enable debug mode (**⚠️ must be set to false in production**).<br>Logs can be filtered using the tag `"gate_pay_sdk"` to view detailed error messages. |
+| `context` | Context | It is recommended to pass the Application Context. |
+| `clientId` | String | The clientId obtained from the Gate Pay platform (i.e., the `api_key` provided by Gate). |
 
-> ⚠️ **注意：** 参数都不能为 null，否则会造成初始化失败
+> ⚠️ **Important:** None of the parameters can be null, otherwise initialization will fail.
 
 ---
 
-## 四、调起支付组件
+## 4. Launch the Payment Component
 
-从服务端获取 **预支付订单号** 和 **签名信息** 后，通过 `GatePaySDK.startGatePay` 来调起 Gate 支付组件。
+After obtaining the **prepay order ID** and **signature information** from your server, invoke the Gate Pay payment component using `GatePaySDK.startGatePay()`.
 
-**方法名：GatePaySDK.startGatePay()**
+**Method: GatePaySDK.startGatePay()**
 
 ```kotlin
 fun startGatePay(
@@ -97,7 +97,7 @@ fun startGatePay(
 )
 ```
 
-**调用示例：**
+**Example Call:**
 
 ```kotlin
 GatePaySDK.startGatePay(
@@ -119,135 +119,136 @@ GatePaySDK.startGatePay(
 )
 ```
 
-> ⚠️ **安全规范：** 所有签名参数（signature/timestamp/nonce/prepayId）必须由服务端生成并下发，客户端仅透传，不参与签名计算。对账以服务端异步通知为准。
+> ⚠️ **Security Compliance:** All signature-related parameters (signature, timesTamp, nonce, prepayId) must be generated and issued by the server. The client only forwards these parameters and must not participate in the signature calculation. Reconciliation is based on the server's asynchronous notification.
 
-> 📖 **服务端对接：** 服务端如何生成签名及对接 API，请参考 [GatePay 服务端文档](https://www.gate.com/docs/gatepay/common/en/)
+> 📖 **Server Integration:** For details on how to generate signatures and integrate APIs on the server side, please refer to the [Gate Pay Server Documentation](https://www.gate.com/docs/gatepay/common/en/).
 
-### 参数说明
+### Parameter Description
 
-| 参数 | 类型 | 说明 |
+| Parameter | Type | Description |
 |------|------|------|
-| `activity` | Activity | 当前页面的 Activity 实例 |
-| `signature` | String | **（服务端生成）** 请求签名，Gate Pay通过此签名来确定此请求是否合法 |
-| `timesTamp` | String | **（服务端生成）** 请求生成时的UTC时间戳，milliseconds<br>⚠️ Gate Pay不处理收到请求时间与这个时间戳差距大于5秒钟的请求 |
-| `nonce` | String | **（服务端生成）** 随机字符串，字符符合HTTP Header头部的规范<br>建议长度在32个字符以内，字符串组成为数字和字母 |
-| `prepayId` | String | **（服务端返回）** 获取的预支付订单ID |
-| `packageExt` | String | 扩展字段，取固定值 `"GatePay"` |
-| `navigationGatePayListener` | NavigationGatePayListener | 调起组件成功或失败的回调监听 |
+| `activity` | Activity | The current Activity instance |
+| `signature` | String | **(Generated by server)** Request signature used by Gate Pay to verify request validity. |
+| `timesTamp` | String | **(Generated by server)** UTC timestamp at the time the request is created, in milliseconds.<br>⚠️ Requests with a time difference greater than 5 seconds will be rejected. |
+| `nonce` | String | **(Generated by server)** Random string that complies with HTTP Header specifications.<br>Recommended length: within 32 characters, consisting of letters and numbers only. |
+| `prepayId` | String | **(Returned by server)** The obtained prepay order ID. |
+| `packageExt` | String | Extension field. Fixed value: `"GatePay"`. |
+| `navigationGatePayListener` | NavigationGatePayListener | Callback listener for success or failure when launching the component. |
 
-### 错误码说明
+### Error Code Reference
 
-**回调方法：**
+**Callback Methods:**
 
 ```kotlin
 fun onGateOpenFailed(code: Int, errorMessage: String?)
 ```
 
-| Code | Error Message | 说明 |
+| Code | Error Message | Description |
 |------|---------------|------|
-| 10021 | openPackage failed | 请检查 App 是否有调起其他应用的权限 |
-| 10022 | intentData error | 请检查 PrepayId 和 redirectUri 是否正确 |
-| 10023 | response data is null | 请检查验签的参数是否正确 |
-| 10023 | 动态获取 throwable.getMessage() | 请检查 onGateOpenFailed 异常信息提示，做对应排查 |
-| 10024 | params error | 请检查初始化或者调起支付传参是否正确 |
+| 10021 | openPackage failed | Please check whether the app has permission to launch external applications. |
+| 10022 | intentData error | Please check whether prepayId and redirectUri are correct. |
+| 10023 | response data is null | Please verify whether the signature parameters are correct. |
+| 10023 | throwable.getMessage() | Please check the exception message returned by onGateOpenFailed for troubleshooting. |
+| 10024 | params error | Please check whether the initialization or payment invocation parameters are correct. |
 
-> ℹ️ **注：** 非以上code，可直接查看errorMessage错误信息，或对应查看Gate Pay服务端对接错误码。
+> ℹ️ **Note:** For error codes not listed above, please refer directly to the returned errorMessage, or check the corresponding Gate Pay server-side error codes.
 
 ---
 
-## 五、支付结果回调
+## 5. Payment Result Callback
 
-### 通过 scheme 配置的 Activity 获取
+The callback result is obtained through the Activity configured with the Scheme.
 
-**回调格式：**
+**Callback Format:**
 
 ```
 {scheme}://{host}?isSuccess={code}&source=gatePay&prepayId={prepayId}
 ```
 
-**示例：**
+**Example:**
 
 ```
 gatepay******://payment?isSuccess=1&source=gatePay&prepayId=123435567
 ```
 
-### 参数说明
+### Parameter Description
 
-| 参数 | 值 | 说明                                                |
-|------|-----|---------------------------------------------------|
-| `scheme` | gatepay****** | Gate生成的 scheme                                    |
-| `host` | payment | 固定值                                               |
-| `isSuccess` | `1` | 成功 (`GatePayConstant.PAYMENT_STATE_SUCCESS_CODE`) |
-|  | `0` | 失败 (`GatePayConstant.PAYMENT_STATE_FAILED_CODE`)  |
-|  | `2` | 取消 (`GatePayConstant.PAYMENT_STATE_CANCEL_CODE`)  |
-| `source` | gatePay | 固定值                                               |
-| `prepayId` | - | 预订单 ID                                            |
+| Parameter | Value | Description |
+|------|-----|------|
+| `scheme` | gatepay****** | The Scheme generated by Gate |
+| `host` | payment | Fixed value |
+| `isSuccess` | `1` | Success (`GatePayConstant.PAYMENT_STATE_SUCCESS_CODE`) |
+|  | `0` | Failed (`GatePayConstant.PAYMENT_STATE_FAILED_CODE`) |
+|  | `2` | Canceled (`GatePayConstant.PAYMENT_STATE_CANCEL_CODE`) |
+| `source` | gatePay | Fixed value |
+| `prepayId` | - | Prepay order ID |
 
 ---
 
-## 六、Android 常见问题
+## 6. Android FAQs
 
-### 1. 填写了 scheme 仍无法回到当前 App？
+### 6.1 Unable to return to the current app after configuring the Scheme?
 
-检查 AndroidManifest，当前 Activity 配置：
+Please check the configuration of the current Activity in AndroidManifest:
 
-- 是否已设置 `android:exported="true"`
-- 是否配置了以下代码：
+- Whether `android:exported="true"` is set
+- Whether the following code is configured:
 
 ```xml
 <data
     android:host="payment"
     android:scheme="gatepay******" />
 ```
-> 💡 gatepay****** 注意检查******为对应的Scheme！！！
-> 💡 **建议：** 启动模式为 `android:launchMode="singleTask"`
+
+> 💡 Note: Make sure that gatepay****** matches your actual Scheme.
+> 💡 **Recommendation:** Set the launch mode to `android:launchMode="singleTask"`
 
 ---
 
-### 2. 调起 startGatePay 方法没有响应？
+### 6.2 No response after calling startGatePay?
 
-在初始化的时候将 `isDebug` 设置为 `true`，通过 Logcat 筛选 `"gate_pay_sdk"` 关键字可查看对应异常提示。
+Set `isDebug` to `true` during initialization and filter logs in Logcat using the keyword `"gate_pay_sdk"` to view the corresponding error messages.
 
-**可能的原因包括但不限于：**
+**Possible causes include, but are not limited to:**
 
-1. SDK未初始化
-2. 没有填写 clientId
-3. 暂未安装 Gate App（SDK已实现跳转下载）
-4. 暂未升级最新版 Gate App [6.34.0+]（SDK已实现弹框提醒更新下载）
-
----
-
-### 3. 支付结果回调状态无法获取？
-
-参考步骤五，检查以下内容：
-
-- 查看当前 App 是否限制与其他 App 交互
-- 确认参数是否对应 Gate 提供的 scheme
-- scheme 与 clientId 有强绑定作用
-- 确认当前权限配置是否正确
+1. The SDK has not been initialized
+2. clientId is not configured
+3. The Gate App is not installed (the SDK will automatically redirect to the download page)
+4. The Gate App has not been upgraded to the latest version [6.34.0+] (the SDK will display a prompt for update and download)
 
 ---
 
-### 4. 为什么调起支付组件需要通过服务端获取签名信息？
+### 6.3 Unable to obtain the payment result callback status?
 
-提供平台信息接入后，Gate Pay 收到这些信息后会给第三方提供 `api_key` 和 `api_secret`：
+Refer to Section 5 and check the following:
 
-- `api_key` 作为身份标识
-- `api_secret` 用于请求签名
-
-> ⚠️ **重要：** `api_secret` 一定要妥善保存防止泄漏，只能通过服务端生成签名信息。
-
-> 📝 **注：** 可参考 GatePayDemo 查看完整接入流程。
+- Whether the current app restricts interaction with other apps
+- Whether the parameters match the Scheme provided by Gate
+- The Scheme is tightly bound to the clientId
+- Whether the required permissions are correctly configured
 
 ---
 
-### 5. 是否支持非 App 类应用对接（例如 H5 网页调起支付）？
+### 6.4 Why must the payment signature be obtained from the server when initiating a payment?
 
-H5 跳转支付可直接集成我们 GatePay Web 端收银台，内部已经处理好跳转逻辑。
+After the platform information is registered, Gate Pay will issue the `api_key` and `api_secret` to the third party:
 
-> ⚠️ **注意：** 跟 App 调起支付一样，仅支持 [6.34.0+] 以上版本。
+- `api_key` as the identity identifier
+- `api_secret` for request signature generation
 
-**支持以下 scheme 跳转：**
+> ⚠️ **Important:** The `api_secret` must be securely stored to prevent unauthorized access, and all signatures must be generated exclusively on the server.
+
+> 📝 **Note:** You may refer to GatePayDemo for the complete integration workflow.
+
+---
+
+### 6.5 Is integration supported for non-app applications (e.g., H5 web pages)?
+
+For H5-based payments, you can directly integrate the Gate Pay Web Checkout, which already handles the redirection logic internally.
+
+> ⚠️ **Note:** Same as app-based payments, only Gate App versions [6.34.0+] or later are supported.
+
+**Supported Scheme redirections include:**
 
 ```
 gatepay://miniapp/gatepay?prepayId=1234567
